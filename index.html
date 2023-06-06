@@ -1,0 +1,430 @@
+<html lang="ja">
+    <head>
+        <meta charset="utf-8" />
+
+		<!-- Embed latest version of Babylon.js. -->
+		<!-- <script src="https://cdn.babylonjs.com/babylon.js"></script> -->
+        <script src="./Babylon.js/babylon.js"></script>
+
+		<!-- Embed Babylon loader scripts for .gltf and other filetypes. -->
+		<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+
+		<!-- Embed pep.js for consistent cross-browser pointer events. -->
+		<script src="https://code.jquery.com/pep/0.4.3/pep.js"></script>
+
+        <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+
+        <!-- <script src="./Babylon.js/dist/gui/babylon.gui.min.js"></script> -->
+        <!-- <script src="./Babylon.js/dist/gui/babylon.gui.js.map"></script> -->
+        <title>babylon sora multi sendrecv</title>
+    </head>
+
+    <body>
+        <canvas id="renderCanvas" style="border: 3px solid gray; width: 99%; height: 93%; margin: auto; position: absolute; top: 60; bottom: 0;left: 0;right: 0; touch-action: none;"></canvas>
+        <font size="6"> Channel ID <input type="text" id="channel_id_input" value="twincam-right" style="height: 30px;font-size: 19px;position: relative;top: -2;">
+            <input type="button" value="Reconnect" onclick="connect_clicked();" style="position: relative;top: -4;height: 30;">
+        </font>
+        <input type="radio" name="mic_on_off" onclick="mic_on_off_clicked()" style="width: 30px; height: 30px; position: relative; top: 6px; margin-left: 50;"><font size="6">mic on</font>
+        <input type="radio" name="mic_on_off" onclick="mic_on_off_clicked()" checked style="width: 30px; height: 30px; position: relative; top: 6px; margin-left: 20;"><font size="6">mic off</font><br>
+
+        <div id="remote-videos">
+            <video id="remoteVideo" controls muted="false" style="border: 1px solid gray; width: 49.5%; float: left; display: none;"></video>
+            <video id="local-video_1" src="medias/videos/vr20230427.MP4" controls autoplay = "false" muted="false" style="border: 1px solid gray; width: 49.5%; float: left; display: none;"></video>
+            <video id="local-video_2" src="medias/videos/kitadake.MP4" controls muted="false" style="border: 1px solid gray; width: 49.5%; float: left; display: none;"></video>
+        </div>
+
+		<!-- Babylon.js のレンダリング内容を表示するための Canvas タグ-->
+		<!-- <canvas id="renderCanvas" style="border: 3px solid gray; width: 80%; height: 80%; float: left; touch-action: none; margin: auto; position: absolute; top: 0;"></canvas> -->
+        <!-- <canvas id="renderCanvas" style="border: 3px solid gray; width: 98%; height: 90%; margin: auto; position: absolute; top: 0; bottom: 0;left: 0;right: 0;"></canvas> -->
+        <script type="text/javascript">
+            let CLOSE_DATA_CHANNEL = false;
+            function previewGetStatsResult(peer, result) {
+                console.log('video latency: '+ result.video.latency + 'ms');
+            }
+            function hoge() {
+                console.log("hoge\nhoge\nhoge\nhoge");
+            }
+        </script>
+        <script src="./getStats.js"></script>
+        <script type="text/javascript" src="./sora.js"></script>
+        <script type="text/javascript">
+///////////////////////////////
+            const debug = true;
+            const sora = Sora.connection("wss://sora.ikeilabsora.0am.jp/signaling", debug);
+            const options = {
+                multistream : true,
+                video : false,
+                audio : true
+            };
+
+            let sendrecv = sora.sendrecv("twincam-right", null, options);
+
+            let mediaStream_id = null;
+
+            sendrecv.on("track", (event) => {
+                //console.log("about event")
+                console.log(event);
+                const stream = event.streams[0];
+                if (event.track.kind == "video") {
+                    document.querySelector('#remoteVideo').srcObject = stream;
+                    document.querySelector('#remoteVideo').autoplay = true;
+                    document.querySelector('#remoteVideo').muted = false;
+                    mediaStream_id = event.streams[0].id;
+                    getStats(sendrecv.pc, function(result) {
+                        ;//previewGetStatsResult(this.pc, result);
+                        //console.log(result.video.latency + 'ms');
+                    }, 500);
+                }
+                if (event.track.kind == 'audio') {
+                    const audio = document.createElement('audio');
+                    audio.id = "audio-" + event.streams[0].id;
+                    audio.srcObject = event.streams[0];
+                    audio.controls = true;
+                    audio.autoplay = true;
+                    audio.style = "display: none;"
+                    document.getElementById('remote-videos').appendChild(audio);
+                }
+            });
+
+            setInterval(observe_video, 10000);
+            function observe_video() {
+                if (document.getElementById(`audio-${mediaStream_id}`)) {
+                    document.getElementById(`audio-${mediaStream_id}`).remove();
+                }
+            }
+
+            let localStream = null;//to send back to Sora
+
+            function connect_clicked() {//for conection with Sora
+                sendrecv.channelId = document.getElementById('channel_id_input').value;
+                navigator.mediaDevices
+                    .getUserMedia({ audio: true, video: false })
+                    .then((stream) => {
+                        localStream = stream;
+                        localStream.getAudioTracks()[0].enabled = false;
+                        console.log(stream);
+                        sendrecv.connect(stream);
+
+                    })
+                    .catch((e) => {
+                         console.error(e);
+                    });
+            }
+
+            function mic_on_off_clicked() {
+                if (document.getElementsByName('mic_on_off')[0].checked) {
+                    localStream.getAudioTracks()[0].enabled = true;
+                }
+                else {
+                    localStream.getAudioTracks()[0].enabled = false;
+                }
+            }
+
+            connect_clicked();
+
+//////////////////////////////
+
+			// canvas DOM 要素を取得する
+			let canvas = document.getElementById('renderCanvas');
+			// Initialize Babylon.js variables.
+			let	sceneToRender;
+            let xrHelper;
+			const createDefaultEngine = function (canvas) {
+                return new BABYLON.Engine(canvas, true, {
+					preserveDrawingBuffer: true,
+					stencil: true
+				});
+            }
+
+            const engine = createDefaultEngine(canvas);
+
+            //let playCam2DomeDist = 1000;
+            let playDomePos = new BABYLON.Vector3(0, 500, 0);
+            let outDomeState = true;
+            let mySphere = [];
+            let domesPos = [];//using spheres
+            var radius = 2.5;
+	        var nSphere = 6;
+	        var pi2 = Math.PI * 2;
+	        var step = pi2 / nSphere;
+	        var spHeight = 3;
+	        for (var i = 0; i < pi2; i += step ) {
+		        var x = radius * Math.sin(i);
+		        var z = radius * Math.cos(i);
+		        var y = spHeight;
+		        domesPos.push( new BABYLON.Vector3(x, y, z) );
+	        }
+            
+			///////////////////////////////////////////////////////
+			//Create scene and create XR experience.
+			const createScene = async function() {
+				 // This creates a basic Babylon Scene object (non-mesh)
+				var scene = new BABYLON.Scene(engine);
+				
+
+				// This creates and positions a free camera (non-mesh)
+				//var camera = new BABYLON.FreeCamera("UniversalCamera", new BABYLON.Vector3(0, 1, 0), scene);
+				//camera.speed = 0.1				
+				//camera.setTarget(new BABYLON.Vector3(1, 1, 0));
+				//camera.getViewMatrix(true)
+				//camera.inputs.addMouseWheel();
+				//camera.attachControl(canvas, true);
+                
+                var cameraTarget = new BABYLON.Vector3(0, 1.6, 0);
+				var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", Math.PI, Math.PI / 2, 5, cameraTarget, scene);
+				camera.fov = 120 * (Math.PI / 180);
+                camera.useAutoRotationBehavior = true;
+                camera.autoRotationBehavior.idleRotationSpeed *= 2.0;
+				camera.attachControl(canvas, true);
+                
+                let lastCampos = camera.position;
+
+                var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+                light.intensity = 0.7;
+                var pl = new BABYLON.PointLight("pl", BABYLON.Vector3.Zero(), scene);
+                pl.diffuse = new BABYLON.Color3(1, 1, 1);
+                pl.specular = new BABYLON.Color3(0.01, 0.01, 0.01);
+                pl.intensity = 0.8;
+				
+				
+                //var gmat = new BABYLON.StandardMaterial("grass", scene);
+                //gmat.diffuseTexture = new BABYLON.Texture("./medias/mats/green-grass-leaf_base_1k.jpg", scene);
+                //gmat.diffuseTexture.hasAlpha = true;
+                //var ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 10, height: 15}, scene);
+                //ground.position.y = 0.3;
+                //ground.position.x = -1.0
+                //ground.material = gmat;
+                
+                //var photodome = new BABYLON.PhotoDome(
+				//	"background", "./medias/pics/tsukubaCentralLib.jpg",
+				//	{
+				//		resolution: 32,
+				//		size: 1000 //Physical radius
+				//	},
+				//	scene
+				//);
+				//photodome.position = new BABYLON.Vector3(0, 0, 0);
+				
+
+                //create photo material and texture
+                const createMat = (name, textureUrlOrElement, vscale) => {
+                    var _mat = new BABYLON.StandardMaterial(name, scene);
+                    var _text = new BABYLON.Texture(textureUrlOrElement, scene);
+                    _text.vScale = vscale;
+                    _mat.ambientTexture = _text;
+                    _mat.emissiveColor = new BABYLON.Color3(1, 1, 1);
+                    _mat.backFaceCulling = false;
+				    return _mat;
+			    }
+                //create video material and texture
+                let creatVideoMat = (name, textureUrlOrElement) => {
+                    let _vmat = new BABYLON.StandardMaterial(name, scene);
+                    _vmat.emissiveColor = new BABYLON.Color3(1, 1, 1);
+                    let _vtext = new BABYLON.VideoTexture(name+"_vtext", textureUrlOrElement, scene, true, true,
+                                //BABYLON.VideoTexture.TRILINEAR_SAMPLINGMODE,
+                                //{
+                                //    autoPlay:false,
+                                //    mute:false,
+                                //    autoUpdateTexture:true
+                                //}
+                    );
+                    _vmat.roughness = 1;
+                    _vmat.diffuseTexture = _vtext;
+                    _vmat.backFaceCulling = false;
+				    return _vmat;
+                }
+                
+                //initial world
+                var background = BABYLON.MeshBuilder.CreateSphere("background", { diameter: 1000, diameterX: 1000}, scene);
+                background.position = new BABYLON.Vector3(0, 0, 0);
+                background.material = createMat("back mat", "./medias/pics/tsukubaCentralLib.jpg", -1);
+                
+                for (let d = 0; d < 6; d++){//create world with the name including "sphere" word
+                    var _sphereDiameter = 1.0;
+                    var _sphereDiameterX = 1.0;
+                    var sphere = BABYLON.MeshBuilder.CreateSphere("sphere"+d, { diameter: _sphereDiameter, diameterX: _sphereDiameterX }, scene);
+                    sphere.position = domesPos[d];
+                    
+                    sphere.material = createMat("sp mat"+d, "./medias/mats/grass-stone-mountain_base_1k.jpg", -1);
+                    mySphere.push(sphere);
+                }
+
+               
+
+                var outSphere = BABYLON.MeshBuilder.CreateSphere("getout", { diameter: 1.5, diameterX: 1.5}, scene);
+                outSphere.position.x = playDomePos.x + 0;
+                outSphere.position.y = playDomePos.y + 0;
+                outSphere.position.z = playDomePos.z + 0;
+                //outSphere.material = createMat("getoutMat", "./medias/mats/getout.jpg", 1)
+                outSphere.material = createMat("getoutMat", "./medias/pics/tsukubaCentralLib.jpg", -1);
+                outSphere.material.alpha = 0.5;
+
+                var load1 = false;
+                document.querySelector('#remoteVideo').onloadeddata = (event) =>{
+                    //console.log("YYYYYYYYYYYYYYY");
+                    mySphere[0].material = creatVideoMat("remoteVideo", document.getElementById('remoteVideo'));
+                }
+                document.querySelector('#local-video_1').onloadeddata = (event) =>{
+                    console.log("local-video_1 loaded");
+                    load1 = true;
+                    //mySphere[1].material = creatVideoMat("local-video_1", document.getElementById('local-video_1'));
+                }
+                document.querySelector('#local-video_2').onloadeddata = (event) =>{
+                    console.log("local-video_2 loaded");
+                    if(load1)
+                        mySphere[1].material = creatVideoMat("local-video_1", document.getElementById('local-video_1'));
+                    mySphere[2].material = creatVideoMat("local-video_2", document.getElementById('local-video_2'));
+                }
+                
+                               
+                var _prevPickedMesh = "";
+                var myPickedMesh = null;
+                var moveCamState = 0;//0:not move, 1:move to play dome, 2: back home
+                //var initCamPos = camera.position;
+                var pickedMeshInitPos = null;
+                var alpha = Math.PI, beta = Math.PI/2;
+                scene.onPointerObservable.add((pointerInfo) => {
+                    switch (pointerInfo.type) {
+                        case BABYLON.PointerEventTypes.POINTERDOWN:
+                            var pickResult = pointerInfo.pickInfo;
+                            if (pickResult.hit) {
+                                var pickedMesh = pickResult.pickedMesh;
+                                console.log(pickedMesh.name);
+                                if (pickedMesh.name == "getout") {//back home
+                                    outSphere.position.y = playDomePos.y;
+                                    for(let d = 0; d < 6; d++){
+                                        if(mySphere[d].name !== _prevPickedMesh){
+                                            mySphere[d].position.y = spHeight;
+                                            //mySphere[d].material.alpha = 0.0;
+                                        }
+                                    }
+                                    camera.alpha = alpha;
+                                    camera.beta = beta;
+                                    moveCamState = 2;
+                                    _prevPickedMesh = "";
+                                    return;
+                                }
+                                //
+                                if (!pickedMesh.name.includes("sphere")) return;
+                                if (_prevPickedMesh == pickedMesh.name || moveCamState == 1) return;
+                                _prevPickedMesh = pickedMesh.name;
+                                
+                                
+                                if (pickedMesh) {
+                                    if (typeof pickedMesh.material.ambientTexture !== 'undefined') {
+                                        
+                                        myPickedMesh = pickedMesh;
+                                        myPickedMesh.rotation.y = 0;
+                                        pickedMeshInitPos = myPickedMesh.position;
+                                        alpha = camera.alpha;
+                                        beta = camera.beta;
+                                        camera.alpha = Math.PI;
+                                        camera.beta = Math.PI / 2;
+                                        moveCamState = 1; 
+
+                                        for(let d = 0; d < 6; d++){
+                                            if(mySphere[d].name !== _prevPickedMesh){
+                                                mySphere[d].position.y = 200;
+                                                mySphere[d].material.alpha = 0.0;
+                                            }
+                                        }
+                                        outSphere.position.y = cameraTarget.y + 5.0
+                                        
+                                    }
+
+                                }
+                            }
+                        break;
+                        case BABYLON.PointerEventTypes.POINTERPICK:
+                            break;
+                        }
+        
+                });
+
+                // Runs every frame to rotate the sphere
+                scene.onBeforeRenderObservable.add(() => {
+                    for(let d = 0; d < 6; d++){
+                        if(mySphere[d].name !== _prevPickedMesh){
+                            mySphere[d].rotation.y += 0.001 * scene.getEngine().getDeltaTime();
+                        }
+                        
+                        if(mySphere[d].material.alpha < 1.0 && moveCamState == 2){
+                            mySphere[d].material.alpha += 0.0005 * scene.getEngine().getDeltaTime();
+                        }
+                    }
+                    outSphere.rotation.y += 0.0005 * scene.getEngine().getDeltaTime();
+                    
+                });                
+
+ 
+
+				var meshScaling = new BABYLON.Vector3(100, 100, 100);
+                var meshInitScal = new BABYLON.Vector3(1, 1, 1);
+                scene.registerBeforeRender(function () {//animation
+                    
+                    if(moveCamState == 1){//picked a sphere and enter a world
+                        camera.useAutoRotationBehavior = false;
+                        myPickedMesh.scaling = BABYLON.Vector3.Lerp(myPickedMesh.scaling, meshScaling,0.01);
+                        myPickedMesh.position = BABYLON.Vector3.Lerp(myPickedMesh.position,cameraTarget,0.02);
+                    }
+                    else if(moveCamState == 2){//back home
+                        camera.useAutoRotationBehavior = true;
+                        myPickedMesh.scaling = BABYLON.Vector3.Lerp(myPickedMesh.scaling, meshInitScal,0.05);
+                        myPickedMesh.position = BABYLON.Vector3.Lerp(myPickedMesh.position,pickedMeshInitPos,0.05);
+                    }
+					
+				});
+				
+                
+				 // Create a default environment for the scene.
+				var environment = scene.createDefaultEnvironment();
+				xrHelper = await scene.createDefaultXRExperienceAsync({
+                    // floorMeshes: [environment.ground]
+                });
+
+                if (!xrHelper.baseExperience) {
+					// XR support is unavailable.
+					console.log('WebXR support is unavailable');
+				}
+                else {
+                    xrHelper.teleportation.detach();
+                    xrHelper.baseExperience.onStateChangedObservable.add((state) => {
+                        if (camera.id == "ArcRotateCamera") {
+                            ;//camera.alpha = -Math.PI / 2;
+                            ;//camera.beta = Math.PI / 2;
+                        }
+                        if (camera.id == "UniversalCamera") {
+                            ;//camera.position = new BABYLON.Vector3(0, 0, 0);
+                            ;//camera.setTarget(new BABYLON.Vector3(0, 0, 1));
+                        }
+                    });
+
+				}
+				
+                return scene;
+            }
+			///////////////////////////////////////////////////////////////
+			
+			// Create scene.
+			scene = createScene();
+			scene.then(function (returnedScene) {
+				sceneToRender = returnedScene;
+			});
+            engine.runRenderLoop(function () {
+				if (sceneToRender) {
+					sceneToRender.render();
+				}
+			});
+            
+
+			// Handle browser resize.
+			window.addEventListener('resize', function () {
+				engine.resize();
+			});
+			/////////////
+            
+            
+			
+        </script>
+    </body>
+</html>
