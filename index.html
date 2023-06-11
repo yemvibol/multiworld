@@ -245,7 +245,7 @@
                     var sphere = BABYLON.MeshBuilder.CreateSphere("sphere"+d, { diameter: _sphereDiameter, diameterX: _sphereDiameterX }, scene);
                     sphere.position = domesPos[d];
                     
-                    //sphere.material = createMat("sp mat"+d, "./medias/mats/grass-stone-mountain_base_1k.jpg", -1);
+                    sphere.material = createMat("sp mat"+d, "./medias/mats/grass-stone-mountain_base_1k.jpg", -1);
                     mySphere.push(sphere);
                 }
 
@@ -258,11 +258,11 @@
                 //outSphere.material = createMat("getoutMat", "./medias/mats/getout.jpg", 1)
                 outSphere.material = createMat("getoutMat", "./medias/pics/tsukubaCentralLib.jpg", -1);
                 outSphere.material.alpha = 0.5;
-		mySphere[1].material = createMat("sp mat1", "./medias/Ankor3.jpg", -1);
-		mySphere[2].material = createMat("sp mat2", "./medias/Ankor4.jpg", -1);
-		mySphere[3].material = createMat("sp mat3", "./medias/Ankor5.jpg", -1);
-		mySphere[4].material = createMat("sp mat4", "./medias/Ankor6.jpg", -1);
-		mySphere[5].material = createMat("sp mat5", "./medias/Ankor7.jpg", -1);
+		//mySphere[1].material = createMat("sp mat1", "./medias/Ankor3.jpg", -1);
+		//mySphere[2].material = createMat("sp mat2", "./medias/Ankor4.jpg", -1);
+		//mySphere[3].material = createMat("sp mat3", "./medias/Ankor5.jpg", -1);
+		//mySphere[4].material = createMat("sp mat4", "./medias/Ankor6.jpg", -1);
+		//mySphere[5].material = createMat("sp mat5", "./medias/Ankor7.jpg", -1);
 
                 var load1 = false;
                 document.querySelector('#remoteVideo').onloadeddata = (event) =>{
