@@ -53,7 +53,7 @@
             const sora = Sora.connection("wss://sora.ikeilabsora.0am.jp/signaling", debug);
             const options = {
                 multistream : true,
-                video : false,
+                video : true,
                 audio : true
             };
 
@@ -237,7 +237,7 @@
                 //initial world
                 var background = BABYLON.MeshBuilder.CreateSphere("background", { diameter: 1000, diameterX: 1000}, scene);
                 background.position = new BABYLON.Vector3(0, 0, 0);
-                background.material = createMat("back mat", "./medias/pics/tsukubaCentralLib.jpg", -1);
+                //background.material = createMat("back mat", "./medias/pics/tsukubaCentralLib.jpg", -1);
                 
                 for (let d = 0; d < 6; d++){//create world with the name including "sphere" word
                     var _sphereDiameter = 1.0;
