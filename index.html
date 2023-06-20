@@ -195,15 +195,15 @@
                 //ground.position.x = -1.0
                 //ground.material = gmat;
                 
-                //var photodome = new BABYLON.PhotoDome(
-				//	"background", "./medias/pics/tsukubaCentralLib.jpg",
-				//	{
-				//		resolution: 32,
-				//		size: 1000 //Physical radius
-				//	},
-				//	scene
-				//);
-				//photodome.position = new BABYLON.Vector3(0, 0, 0);
+                var photodome = new BABYLON.PhotoDome(
+			"background", "./medias/pics/tsukubaCentralLib.jpg",
+			{
+				resolution: 32,
+				size: 1000 //Physical radius
+			},
+			scene
+		);
+		photodome.position = new BABYLON.Vector3(0, 0, 0);
 				
 
                 //create photo material and texture
@@ -234,10 +234,7 @@
 				    return _vmat;
                 }
                 
-                //initial world
-                //var background = BABYLON.MeshBuilder.CreateSphere("background", { diameter: 1000, diameterX: 1000}, scene);
-                //background.position = new BABYLON.Vector3(0, 0, 0);
-                //background.material = createMat("back mat", "./medias/pics/tsukubaCentralLib.jpg", -1);
+                
                 
                 for (let d = 0; d < 6; d++){//create world with the name including "sphere" word
                     var _sphereDiameter = 1.0;
@@ -263,6 +260,11 @@
 		mySphere[3].material = createMat("sp mat3", "./medias/Ankor5.jpg", -1);
 		mySphere[4].material = createMat("sp mat4", "./medias/Ankor6.jpg", -1);
 		mySphere[5].material = createMat("sp mat5", "./medias/Ankor7.jpg", -1);
+
+		//initial world
+                /var background = BABYLON.MeshBuilder.CreateSphere("background", { diameter: 1000, diameterX: 1000}, scene);
+                //background.position = new BABYLON.Vector3(0, 0, 0);
+                //background.material = createMat("back mat", "./medias/pics/tsukubaCentralLib.jpg", -1);
 
                 var load1 = false;
                 document.querySelector('#remoteVideo').onloadeddata = (event) =>{
