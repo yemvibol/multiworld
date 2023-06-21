@@ -28,11 +28,12 @@
         <input type="radio" name="mic_on_off" onclick="mic_on_off_clicked()" checked style="width: 30px; height: 30px; position: relative; top: 6px; margin-left: 20;"><font size="6">mic off</font><br>
 
         <div id="remote-videos">
-            <video id="remoteVideo" controls muted="false" style="border: 1px solid gray; width: 49.5%; float: left; display: none;"></video>
-            <video id="local-video_1" src="medias/videos/vr20230427.MP4" controls autoplay = "false" muted="false" style="border: 1px solid gray; width: 49.5%; float: left; display: none;"></video>
-            <video id="local-video_2" src="medias/videos/kitadake.MP4" controls muted="false" style="border: 1px solid gray; width: 49.5%; float: left; display: none;"></video>
+            <video id="remoteVideo" controls muted="false" style="border: 1px solid gray; width: 30%; float: left; display: none;"></video>
+          
+            
         </div>
-
+        <img id="backgroundImg" src="./medias/pics/tsukubaCentralLib.jpg" alt="background" style="border: 1px solid gray; width: 49.5%; float: left;">
+        
 		<!-- Babylon.js のレンダリング内容を表示するための Canvas タグ-->
 		<!-- <canvas id="renderCanvas" style="border: 3px solid gray; width: 80%; height: 80%; float: left; touch-action: none; margin: auto; position: absolute; top: 0;"></canvas> -->
         <!-- <canvas id="renderCanvas" style="border: 3px solid gray; width: 98%; height: 90%; margin: auto; position: absolute; top: 0; bottom: 0;left: 0;right: 0;"></canvas> -->
@@ -173,8 +174,8 @@
                 var cameraTarget = new BABYLON.Vector3(0, 1.6, 0);
 				var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", Math.PI, Math.PI / 2, 5, cameraTarget, scene);
 				camera.fov = 120 * (Math.PI / 180);
-                //camera.useAutoRotationBehavior = true;
-                //camera.autoRotationBehavior.idleRotationSpeed *= 2.0;
+                camera.useAutoRotationBehavior = true;
+                camera.autoRotationBehavior.idleRotationSpeed *= 2.0;
 				camera.attachControl(canvas, true);
                 
                 let lastCampos = camera.position;
@@ -195,15 +196,15 @@
                 //ground.position.x = -1.0
                 //ground.material = gmat;
                 
-                var photodome = new BABYLON.PhotoDome(
-			"background", "./medias/pics/tsukubaCentralLib.jpg",
-			{
-				resolution: 32,
-				size: 1000 //Physical radius
-			},
-			scene
-		);
-		photodome.position = new BABYLON.Vector3(0, 0, 0);
+                //var photodome = new BABYLON.PhotoDome(
+				//	"background", "./medias/pics/tsukubaCentralLib.jpg",
+				//	{
+				//		resolution: 32,
+				//		size: 1000 //Physical radius
+				//	},
+				//	scene
+				//);
+				//photodome.position = new BABYLON.Vector3(0, 0, 0);
 				
 
                 //create photo material and texture
@@ -234,6 +235,14 @@
 				    return _vmat;
                 }
                 
+                //initial world
+                var background = BABYLON.MeshBuilder.CreateSphere("background", { diameter: 1000, diameterX: 1000}, scene);
+                background.position = new BABYLON.Vector3(0, 0, 0);
+                document.getElementById('backgroundImg').addEventListener("load", function(event){
+                    
+                    background.material = createMat("back mat", "./medias/pics/tsukubaCentralLib.jpg", -1);
+                });
+
                 
                 
                 for (let d = 0; d < 6; d++){//create world with the name including "sphere" word
@@ -245,8 +254,7 @@
                     sphere.material = createMat("sp mat"+d, "./medias/mats/grass-stone-mountain_base_1k.jpg", -1);
                     mySphere.push(sphere);
                 }
-
-               
+            
 
                 var outSphere = BABYLON.MeshBuilder.CreateSphere("getout", { diameter: 1.5, diameterX: 1.5}, scene);
                 outSphere.position.x = playDomePos.x + 0;
@@ -255,33 +263,28 @@
                 //outSphere.material = createMat("getoutMat", "./medias/mats/getout.jpg", 1)
                 outSphere.material = createMat("getoutMat", "./medias/pics/tsukubaCentralLib.jpg", -1);
                 outSphere.material.alpha = 0.5;
-		mySphere[1].material = createMat("sp mat-1", "./medias/Ankor3.jpg", -1);
-		mySphere[2].material = createMat("sp mat2", "./medias/Ankor4.jpg", -1);
-		mySphere[3].material = createMat("sp mat3", "./medias/Ankor5.jpg", -1);
-		mySphere[4].material = createMat("sp mat4", "./medias/Ankor6.jpg", -1);
-		mySphere[5].material = createMat("sp mat5", "./medias/Ankor7.jpg", -1);
-
-		//initial world
-                //var background = BABYLON.MeshBuilder.CreateSphere("background", { diameter: 1000, diameterX: 1000}, scene);
-                //background.position = new BABYLON.Vector3(0, 0, 0);
-                //background.material = createMat("back mat", "./medias/pics/tsukubaCentralLib.jpg", -1);
 
                 var load1 = false;
                 document.querySelector('#remoteVideo').onloadeddata = (event) =>{
                     //console.log("YYYYYYYYYYYYYYY");
                     mySphere[0].material = creatVideoMat("remoteVideo", document.getElementById('remoteVideo'));
                 }
-                document.querySelector('#local-video_1').onloadeddata = (event) =>{
-                    console.log("local-video_1 loaded");
-                    load1 = true;
-                    //mySphere[1].material = creatVideoMat("local-video_1", document.getElementById('local-video_1'));
-                }
-                document.querySelector('#local-video_2').onloadeddata = (event) =>{
-                    console.log("local-video_2 loaded");
-                    if(load1)
-                        mySphere[1].material = creatVideoMat("local-video_1", document.getElementById('local-video_1'));
-                    mySphere[2].material = creatVideoMat("local-video_2", document.getElementById('local-video_2'));
-                }
+                //document.querySelector('#local-video_1').onloadeddata = (event) =>{
+                //    document.querySelector('#local-video_1').pause();
+                    //document.querySelector('#local-video_1').play();
+                //    console.log("local-video_1 loaded");
+                //    load1 = true;
+                //    mySphere[1].material = creatVideoMat("local-video_1", document.getElementById('local-video_1'));
+                  
+
+
+                //}
+                //document.querySelector('#local-video_2').onloadeddata = (event) =>{
+                //    console.log("local-video_2 loaded");
+                    //if(load1)
+                    //    mySphere[1].material = creatVideoMat("local-video_1", document.getElementById('local-video_1'));
+                   // mySphere[2].material = creatVideoMat("local-video_2", document.getElementById('local-video_2'));
+                //}
                 
                                
                 var _prevPickedMesh = "";
@@ -319,7 +322,8 @@
                                 
                                 if (pickedMesh) {
                                     if (typeof pickedMesh.material.ambientTexture !== 'undefined') {
-                                        
+                                        if(pickedMesh.name == "sphere1")
+                                            mySphere[1].material = creatVideoMat("local-video_1", document.getElementById('local-video_1'));
                                         myPickedMesh = pickedMesh;
                                         myPickedMesh.rotation.y = 0;
                                         pickedMeshInitPos = myPickedMesh.position;
@@ -365,7 +369,7 @@
 
  
 
-				var meshScaling = new BABYLON.Vector3(300, 300, 300);
+				var meshScaling = new BABYLON.Vector3(100, 100, 100);
                 var meshInitScal = new BABYLON.Vector3(1, 1, 1);
                 scene.registerBeforeRender(function () {//animation
                     
