@@ -32,8 +32,15 @@
           
             
         </div>
-        <img id="backgroundImg" src="./medias/pics/tsukubaCentralLib.jpg" alt="background" style="border: 1px solid gray; width: 49.5%; float: left;">
-        
+        <div id="image">
+            <img id="backgroundImg" src="./medias/pics/tsukubaCentralLib.jpg" alt="background" style="border: 1px solid gray; width: 49.5%; float: left;">
+            <img id="Img1" src="./medias/Ankor3.jpg" alt="background" style="border: 1px solid gray; width: 49.5%; float: left;">
+            <img id="Img2" src="./medias/Ankor4.jpg" alt="background" style="border: 1px solid gray; width: 49.5%; float: left;">
+            <img id="Img3" src="./medias/Ankor5.jpg" alt="background" style="border: 1px solid gray; width: 49.5%; float: left;">
+            <img id="Img4" src="./medias/Ankor6.jpg" alt="background" style="border: 1px solid gray; width: 49.5%; float: left;">
+            <img id="Img5" src="./medias/Ankor7.jpg" alt="background" style="border: 1px solid gray; width: 49.5%; float: left;">
+        </div>
+
 		<!-- Babylon.js のレンダリング内容を表示するための Canvas タグ-->
 		<!-- <canvas id="renderCanvas" style="border: 3px solid gray; width: 80%; height: 80%; float: left; touch-action: none; margin: auto; position: absolute; top: 0;"></canvas> -->
         <!-- <canvas id="renderCanvas" style="border: 3px solid gray; width: 98%; height: 90%; margin: auto; position: absolute; top: 0; bottom: 0;left: 0;right: 0;"></canvas> -->
@@ -151,8 +158,8 @@
 	        var spHeight = 3;
 	        for (var i = 0; i < pi2; i += step ) {
 		        var x = radius * Math.sin(i);
-		        var z = radius * Math.cos(i);
-		        var y = spHeight;
+		        var z =  5;
+		        var y = spHeight + radius * Math.cos(i);
 		        domesPos.push( new BABYLON.Vector3(x, y, z) );
 	        }
             
@@ -172,10 +179,10 @@
 				//camera.attachControl(canvas, true);
                 
                 var cameraTarget = new BABYLON.Vector3(0, 1.6, 0);
-				var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", Math.PI, Math.PI / 2, 5, cameraTarget, scene);
+				var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", -Math.PI/2, Math.PI / 2, 0.5, cameraTarget, scene);
 				camera.fov = 120 * (Math.PI / 180);
-                camera.useAutoRotationBehavior = true;
-                camera.autoRotationBehavior.idleRotationSpeed *= 2.0;
+                //camera.useAutoRotationBehavior = true;
+                //camera.autoRotationBehavior.idleRotationSpeed *= 0.5;
 				camera.attachControl(canvas, true);
                 
                 let lastCampos = camera.position;
@@ -186,26 +193,6 @@
                 pl.diffuse = new BABYLON.Color3(1, 1, 1);
                 pl.specular = new BABYLON.Color3(0.01, 0.01, 0.01);
                 pl.intensity = 0.8;
-				
-				
-                //var gmat = new BABYLON.StandardMaterial("grass", scene);
-                //gmat.diffuseTexture = new BABYLON.Texture("./medias/mats/green-grass-leaf_base_1k.jpg", scene);
-                //gmat.diffuseTexture.hasAlpha = true;
-                //var ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 10, height: 15}, scene);
-                //ground.position.y = 0.3;
-                //ground.position.x = -1.0
-                //ground.material = gmat;
-                
-                //var photodome = new BABYLON.PhotoDome(
-				//	"background", "./medias/pics/tsukubaCentralLib.jpg",
-				//	{
-				//		resolution: 32,
-				//		size: 1000 //Physical radius
-				//	},
-				//	scene
-				//);
-				//photodome.position = new BABYLON.Vector3(0, 0, 0);
-				
 
                 //create photo material and texture
                 const createMat = (name, textureUrlOrElement, vscale) => {
@@ -238,53 +225,52 @@
                 //initial world
                 var background = BABYLON.MeshBuilder.CreateSphere("background", { diameter: 1000, diameterX: 1000}, scene);
                 background.position = new BABYLON.Vector3(0, 0, 0);
-                document.getElementById('backgroundImg').addEventListener("load", function(event){
-                    
-                    background.material = createMat("back mat", "./medias/pics/tsukubaCentralLib.jpg", -1);
-                });
-
-                
-                
-                for (let d = 0; d < 6; d++){//create world with the name including "sphere" word
-                    var _sphereDiameter = 1.0;
-                    var _sphereDiameterX = 1.0;
-                    var sphere = BABYLON.MeshBuilder.CreateSphere("sphere"+d, { diameter: _sphereDiameter, diameterX: _sphereDiameterX }, scene);
-                    sphere.position = domesPos[d];
-                    
-                    sphere.material = createMat("sp mat"+d, "./medias/mats/grass-stone-mountain_base_1k.jpg", -1);
-                    mySphere.push(sphere);
-                }
-            
-
                 var outSphere = BABYLON.MeshBuilder.CreateSphere("getout", { diameter: 1.5, diameterX: 1.5}, scene);
                 outSphere.position.x = playDomePos.x + 0;
                 outSphere.position.y = playDomePos.y + 0;
                 outSphere.position.z = playDomePos.z + 0;
-                //outSphere.material = createMat("getoutMat", "./medias/mats/getout.jpg", 1)
-                outSphere.material = createMat("getoutMat", "./medias/pics/tsukubaCentralLib.jpg", -1);
-                outSphere.material.alpha = 0.5;
+                document.getElementById('backgroundImg').addEventListener("load", function(event){
+                    background.material = createMat("back mat", "./medias/pics/tsukubaCentralLib.jpg", -1);
+                    //outSphere.material = createMat("getoutMat", "./medias/mats/getout.jpg", 1)
+                    outSphere.material = createMat("getoutMat", "./medias/pics/tsukubaCentralLib.jpg", -1);
+                    outSphere.material.alpha = 0.5;
+                });
 
-                var load1 = false;
+                for (let d = 0; d < 6; d++){//create world with the name including "sphere" word
+                    var _sphereDiameter = 1.0;
+                    var _sphereDiameterX = 1.0;
+                    var sphere = BABYLON.MeshBuilder.CreateSphere("sphere"+d, { diameter: _sphereDiameter, diameterX: _sphereDiameterX }, scene);
+                    sphere.position = domesPos[d];    
+                    sphere.material = createMat("sp mat"+d, "./medias/mats/grass-stone-mountain_base_1k.jpg", -1);
+                    mySphere.push(sphere);
+                }
+                var img1 = document.getElementById('Img1');
+                img1.addEventListener("load", function(event){
+                    mySphere[1].material = createMat("img_mat_1", img1.src, -1);
+                });
+                var img2 = document.getElementById('Img2');
+                img2.addEventListener("load", function(event){
+                    mySphere[2].material = createMat("img_mat_2", img2.src, -1);
+                });
+                var img3 = document.getElementById('Img3');
+                img3.addEventListener("load", function(event){
+                    mySphere[3].material = createMat("img_mat_3", img3.src, -1);
+                });
+                var img4 = document.getElementById('Img4');
+                img4.addEventListener("load", function(event){
+                    mySphere[4].material = createMat("img_mat_4", img4.src, -1);
+                });
+                var img5 = document.getElementById('Img5');
+                img5.addEventListener("load", function(event){
+                    mySphere[5].material = createMat("img_mat_5", img5.src, -1);
+                });
+                
+                let video1_state = false;
                 document.querySelector('#remoteVideo').onloadeddata = (event) =>{
                     //console.log("YYYYYYYYYYYYYYY");
+                    video1_state = true;
                     mySphere[0].material = creatVideoMat("remoteVideo", document.getElementById('remoteVideo'));
                 }
-                //document.querySelector('#local-video_1').onloadeddata = (event) =>{
-                //    document.querySelector('#local-video_1').pause();
-                    //document.querySelector('#local-video_1').play();
-                //    console.log("local-video_1 loaded");
-                //    load1 = true;
-                //    mySphere[1].material = creatVideoMat("local-video_1", document.getElementById('local-video_1'));
-                  
-
-
-                //}
-                //document.querySelector('#local-video_2').onloadeddata = (event) =>{
-                //    console.log("local-video_2 loaded");
-                    //if(load1)
-                    //    mySphere[1].material = creatVideoMat("local-video_1", document.getElementById('local-video_1'));
-                   // mySphere[2].material = creatVideoMat("local-video_2", document.getElementById('local-video_2'));
-                //}
                 
                                
                 var _prevPickedMesh = "";
@@ -292,7 +278,7 @@
                 var moveCamState = 0;//0:not move, 1:move to play dome, 2: back home
                 //var initCamPos = camera.position;
                 var pickedMeshInitPos = null;
-                var alpha = Math.PI, beta = Math.PI/2;
+                //var alpha = -Math.PI/2, beta = Math.PI/2;
                 scene.onPointerObservable.add((pointerInfo) => {
                     switch (pointerInfo.type) {
                         case BABYLON.PointerEventTypes.POINTERDOWN:
@@ -302,14 +288,14 @@
                                 console.log(pickedMesh.name);
                                 if (pickedMesh.name == "getout") {//back home
                                     outSphere.position.y = playDomePos.y;
-                                    for(let d = 0; d < 6; d++){
-                                        if(mySphere[d].name !== _prevPickedMesh){
-                                            mySphere[d].position.y = spHeight;
+                                    //for(let d = 0; d < 6; d++){
+                                    //    if(mySphere[d].name !== _prevPickedMesh){
+                                    //        mySphere[d].position.y = domesPos[d].y;
                                             //mySphere[d].material.alpha = 0.0;
-                                        }
-                                    }
-                                    camera.alpha = alpha;
-                                    camera.beta = beta;
+                                    //    }
+                                    //}
+                                    //camera.alpha = alpha;
+                                    //camera.beta = beta;
                                     moveCamState = 2;
                                     _prevPickedMesh = "";
                                     return;
@@ -322,25 +308,25 @@
                                 
                                 if (pickedMesh) {
                                     if (typeof pickedMesh.material.ambientTexture !== 'undefined') {
-                                        if(pickedMesh.name == "sphere1")
-                                            mySphere[1].material = creatVideoMat("local-video_1", document.getElementById('local-video_1'));
+                                        if(pickedMesh.name == "sphere0" &&  video1_state == true)
+                                            mySphere[0].material = creatVideoMat("local-video_1", document.getElementById('local-video_1'));
                                         myPickedMesh = pickedMesh;
                                         myPickedMesh.rotation.y = 0;
                                         pickedMeshInitPos = myPickedMesh.position;
-                                        alpha = camera.alpha;
-                                        beta = camera.beta;
-                                        camera.alpha = Math.PI;
-                                        camera.beta = Math.PI / 2;
+                                        //alpha = camera.alpha;
+                                        //beta = camera.beta;
+                                        //camera.alpha = -Math.PI/2;
+                                        //camera.beta = Math.PI / 2;
                                         moveCamState = 1; 
 
                                         for(let d = 0; d < 6; d++){
                                             if(mySphere[d].name !== _prevPickedMesh){
-                                                mySphere[d].position.y = 200;
+                                                ;//mySphere[d].position.y = 200;
                                                 mySphere[d].material.alpha = 0.0;
                                             }
                                         }
-                                        outSphere.position.y = cameraTarget.y + 5.0
-                                        
+                                        outSphere.position.y = cameraTarget.y + 2.0
+                                        outSphere.position.z = cameraTarget.z + 3.0
                                     }
 
                                 }
@@ -359,11 +345,12 @@
                             mySphere[d].rotation.y += 0.001 * scene.getEngine().getDeltaTime();
                         }
                         
-                        if(mySphere[d].material.alpha < 1.0 && moveCamState == 2){
-                            mySphere[d].material.alpha += 0.0005 * scene.getEngine().getDeltaTime();
+                        if(mySphere[d].material.alpha < 1.0 && moveCamState == 2){//set transparent to 1
+                            mySphere[d].material.alpha += 0.001 * scene.getEngine().getDeltaTime();
                         }
                     }
-                    outSphere.rotation.y += 0.0005 * scene.getEngine().getDeltaTime();
+                    background.rotation.y -= 0.00002 * scene.getEngine().getDeltaTime();
+                    outSphere.rotation.y += 0.00005 * scene.getEngine().getDeltaTime();
                     
                 });                
 
@@ -374,12 +361,13 @@
                 scene.registerBeforeRender(function () {//animation
                     
                     if(moveCamState == 1){//picked a sphere and enter a world
-                        camera.useAutoRotationBehavior = false;
+                        //camera.useAutoRotationBehavior = false;
                         myPickedMesh.scaling = BABYLON.Vector3.Lerp(myPickedMesh.scaling, meshScaling,0.01);
                         myPickedMesh.position = BABYLON.Vector3.Lerp(myPickedMesh.position,cameraTarget,0.02);
                     }
                     else if(moveCamState == 2){//back home
-                        camera.useAutoRotationBehavior = true;
+                        //camera.useAutoRotationBehavior = true;
+                         
                         myPickedMesh.scaling = BABYLON.Vector3.Lerp(myPickedMesh.scaling, meshInitScal,0.05);
                         myPickedMesh.position = BABYLON.Vector3.Lerp(myPickedMesh.position,pickedMeshInitPos,0.05);
                     }
