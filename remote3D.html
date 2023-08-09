@@ -28,8 +28,8 @@
           <button id="start-sendonly">画面共有開始</button>
           <button id="stop-sendonly">画面共有停止</button><br />
         </div>  
-        <div id="stream-videos" style="display: none;">
-        </div>
+        <div id="stream-videos" style="display: none;"></div>
+        
       </div>
     </div>
     <canvas id="renderCanvas" style="border: 3px solid gray; width: 99%; height: 93%; margin: auto; position: absolute; top: 60; bottom: 0;left: 0;right: 0; touch-action: none;"></canvas>
@@ -112,7 +112,7 @@
           function addVideo(conn){
             //console.log(conn);
             //console.log('client ' + conn.client_id);
-            if(conn.connection_id == sendrecv1.connectionId || conn.client_id == 'THISISREMOTE'){
+            if(conn.connection_id == sendrecv1.connectionId){
               return;
             }
             const stream = remoteVideoTracks[conn.connection_id];
@@ -122,9 +122,11 @@
             }
             if(conn.metadata?.screen){
               //document.querySelector('#screen').srcObject = stream;
-              console.log('screen');
+              addStreamVideo(conn.connection_id, stream, 'screen');
+              //console.log('screen');
             } else {
-              addStreamVideo(conn.connection_id, stream);
+              if(conn.client_id == 'THISISREMOTE') return;
+              addStreamVideo(conn.connection_id, stream, '');
             }
           }
 
@@ -137,7 +139,8 @@
             stream.getTracks().forEach(track => track.stop());
             if(conn.metadata?.screen){
               //document.querySelector('#screen').srcObject = null;
-              console.log('remove screen');
+              removeStreamVideo(conn.connection_id + 'screen');
+              //console.log('remove screen');
             } else {
               removeStreamVideo(conn.connection_id);
               //delete streamSpherePosZ[numOfCliend];
@@ -146,17 +149,31 @@
             delete remoteVideoTracks[conn.connection_id];
           }
 
-          function addStreamVideo(stream_id, stream){//360 video
+          function addStreamVideo(stream_id_, stream, screenShare = ''){//360 video
             var _sphereDiameter = 1000.0;
             var _sphereDiameterX = 1000.0;
-            //console.log('add stream: ' + stream_id);
-            streamSpheres[stream_id] = BABYLON.MeshBuilder.CreateSphere(stream_id, { diameter: _sphereDiameter, diameterX: _sphereDiameterX }, scene);
-            streamSpheres[stream_id].position.x = 0;
-            streamSpheres[stream_id].position.z = numOfCliend * 100.0;
-            streamSpheres[stream_id].position.y = cameraTarget.y;
-            numOfCliend += 1;
-          
+            var stream_id = stream_id_ + screenShare;
             const remoteVideoId = 'stream-video-' + stream_id;
+            var vScale = 1;
+            //console.log('add stream: ' + stream_id);
+            if(screenShare == ''){
+              streamSpheres[stream_id] = BABYLON.MeshBuilder.CreateSphere(stream_id, { diameter: _sphereDiameter, diameterX: _sphereDiameterX }, scene);
+              streamSpheres[stream_id].position.x = 0;
+              streamSpheres[stream_id].position.z = numOfCliend * 100.0;
+              streamSpheres[stream_id].position.y = cameraTarget.y;
+              numOfCliend += 1;
+            }
+            else{
+              var planeOpts = {
+			          height: 9.6, 
+			          width: 12.8, 
+			          sideOrientation: BABYLON.Mesh.DOUBLESIDE
+	            };
+              streamSpheres[stream_id] = BABYLON.MeshBuilder.CreatePlane("plane", planeOpts, scene);
+              streamSpheres[stream_id].position = new BABYLON.Vector3(0, cameraTarget.y, 10);
+              vScale = -1;
+            }
+            
             const remoteVideos = document.querySelector('#stream-videos');
             if (!remoteVideos.querySelector('#' + remoteVideoId)) {
               const remoteVideo = document.createElement('video');
@@ -165,11 +182,11 @@
               remoteVideo.autoplay = true;
               remoteVideo.playsinline = true;
               remoteVideo.controls = true;
-              remoteVideo.width = '3840';
-              remoteVideo.height = '1920';
+              remoteVideo.width = '640';
+              remoteVideo.height = '480';
               remoteVideo.srcObject = stream;
               remoteVideos.appendChild(remoteVideo);
-              streamSpheres[stream_id].material = creatVideoMat(stream_id, document.getElementById(remoteVideoId), 1);
+              streamSpheres[stream_id].material = creatVideoMat(stream_id, document.getElementById(remoteVideoId), vScale);
             }
           }
 
@@ -208,7 +225,7 @@
           const mediaStream = await navigator.mediaDevices.getUserMedia({audio: true, video: true});
           await sendrecv1.connect(mediaStream);
           messageOpen = true;
-          //addStreamVideo(sendrecv1.connectionId, mediaStream);
+          
         });
         document.querySelector('#stop-sendrecv1').addEventListener('click', async () => {//退室
           messageOpen = false;
@@ -231,7 +248,7 @@
         });
 
         //////////
-        document.querySelector('#start-sendonly').addEventListener('click', async () => {
+        document.querySelector('#start-sendonly').addEventListener('click', async () => {//画面共有
         // sendonly
           let mediaStream = null;
           try {
@@ -248,7 +265,7 @@
           document.getElementById("screen").srcObject = mediaStream;
         });
 
-        document.querySelector('#stop-sendonly').addEventListener('click', async () => {
+        document.querySelector('#stop-sendonly').addEventListener('click', async () => {//画面共有の修了
           await sendonly.disconnect();
           //document.querySelector('#screen').srcObject = null;
           //document.querySelector('#screen').innerHTML = null;
