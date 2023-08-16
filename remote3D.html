@@ -73,21 +73,24 @@
       }
 
       const engine = createDefaultEngine(canvas);
-      //Create scene and create XR experience.*********************************
+      //********* Create scene and create XR experience. *********************************
 		  const createScene = async function() 
       {
+        //  *** CAMERA  ***
         var scene = new BABYLON.Scene(engine);
         var cameraTarget = new BABYLON.Vector3(0, 100, 0);
-			  var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", -Math.PI/2, Math.PI / 2, 5.0, cameraTarget, scene);
+			  var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 0, Math.PI / 2, 5.0, cameraTarget, scene);
 			  camera.fov = 60 * (Math.PI / 180);
         camera.attachControl(canvas, true);
+        camera.inputs.remove(camera.inputs.attached.mousewheel);
 
-        var streamSpherePosZ = {};
+        // *** VARIABLES ***
         let numOfCliend = 0;
         var streamSpheres = {};
         var cameraData = {};
         var messageOpen = false;
-
+        var lastAlpha = 1000;//camera.alpha;
+        // SORA
         const sendrecv1 = sora.sendrecv(channelId, null, options);
         const sendonly = sora.sendonly(channelId, null, screenOptions);
         
@@ -121,9 +124,7 @@
               return;
             }
             if(conn.metadata?.screen){
-              //document.querySelector('#screen').srcObject = stream;
               addStreamVideo(conn.connection_id, stream, 'screen');
-              //console.log('screen');
             } else {
               if(conn.client_id == 'THISISREMOTE') return;
               addStreamVideo(conn.connection_id, stream, '');
@@ -138,13 +139,10 @@
             }
             stream.getTracks().forEach(track => track.stop());
             if(conn.metadata?.screen){
-              //document.querySelector('#screen').srcObject = null;
               removeStreamVideo(conn.connection_id + 'screen');
-              //console.log('remove screen');
             } else {
               removeStreamVideo(conn.connection_id);
-              //delete streamSpherePosZ[numOfCliend];
-              //numOfCliend =- 1;
+              
             }
             delete remoteVideoTracks[conn.connection_id];
           }
@@ -155,11 +153,10 @@
             var stream_id = stream_id_ + screenShare;
             const remoteVideoId = 'stream-video-' + stream_id;
             var vScale = 1;
-            //console.log('add stream: ' + stream_id);
             if(screenShare == ''){
               streamSpheres[stream_id] = BABYLON.MeshBuilder.CreateSphere(stream_id, { diameter: _sphereDiameter, diameterX: _sphereDiameterX }, scene);
               streamSpheres[stream_id].position.x = 0;
-              streamSpheres[stream_id].position.z = numOfCliend * 100.0;
+              streamSpheres[stream_id].position.z = 0;//numOfCliend * 100.0;
               streamSpheres[stream_id].position.y = cameraTarget.y;
               numOfCliend += 1;
             }
@@ -225,6 +222,9 @@
           const mediaStream = await navigator.mediaDevices.getUserMedia({audio: true, video: true});
           await sendrecv1.connect(mediaStream);
           messageOpen = true;
+          lastAlpha = 1000;//camera.alpha;
+          var value = sendrecv1.connectionId+',' + camera.alpha;
+          sendrecv1.sendMessage('#example', new TextEncoder().encode(value));
           
         });
         document.querySelector('#stop-sendrecv1').addEventListener('click', async () => {//退室
@@ -241,9 +241,7 @@
           for (let id in remoteVideoTracks){
             delete remoteVideoTracks[id];
           }
-          for (let id in streamSpherePosZ){
-            delete streamSpherePosZ[id];
-          }
+          
     
         });
 
@@ -267,18 +265,20 @@
 
         document.querySelector('#stop-sendonly').addEventListener('click', async () => {//画面共有の修了
           await sendonly.disconnect();
-          //document.querySelector('#screen').srcObject = null;
-          //document.querySelector('#screen').innerHTML = null;
         });
         
         //sendrecv1.on('message', (event) => {
         //  console.log('message: ' + new TextDecoder().decode(event.data));
         //});
- 
+        
         scene.onBeforeRenderObservable.add(() => { // Runs every frame
           if(messageOpen){
-            var value = sendrecv1.connectionId+',' + camera.alpha;
-            sendrecv1.sendMessage('#example', new TextEncoder().encode(value));
+            if(lastAlpha != camera.alpha){
+              //console.log(camera.alpha);
+              var value = sendrecv1.connectionId+',' + camera.alpha;
+              sendrecv1.sendMessage('#example', new TextEncoder().encode(value));
+              lastAlpha = camera.alpha;
+            }
           }
         });                
 
