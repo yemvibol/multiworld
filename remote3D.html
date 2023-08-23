@@ -26,7 +26,10 @@
           <button id="start-sendrecv1">入室</button>
           <button id="stop-sendrecv1">退室</button>
           <button id="start-sendonly">画面共有開始</button>
-          <button id="stop-sendonly">画面共有停止</button><br />
+          <button id="stop-sendonly">画面共有停止</button>
+          <input type="radio" name="mic_on_off" onclick="mic_on_off_clicked()" style="width: 30px; height: 20px; position: relative; top: 4px; margin-left: 50;"><font size="5">mic on</font>
+          <input type="radio" name="mic_on_off" onclick="mic_on_off_clicked()" checked style="width: 30px; height: 20px; position: relative; top: 4px; margin-left: 20;"><font size="5">mic off</font><br>
+
         </div>  
         <div id="stream-videos" style="display: none;"></div>
         
@@ -60,7 +63,7 @@
         bundleId: bundleId,
         signalingNotifyMetadata: {screen:true}
       }
-
+      let localStream;
       // canvas DOM 要素を取得する***********************************************
 		  let canvas = document.getElementById('renderCanvas');
 		  // Initialize Babylon.js variables.
@@ -85,6 +88,7 @@
         camera.inputs.remove(camera.inputs.attached.mousewheel);
 
         // *** VARIABLES ***
+        
         let numOfCliend = 0;
         var streamSpheres = {};
         var cameraData = {};
@@ -162,8 +166,8 @@
             }
             else{
               var planeOpts = {
-			          height: 9.6, 
-			          width: 12.8, 
+			          height: 14.4, 
+			          width: 19.2, 
 			          sideOrientation: BABYLON.Mesh.DOUBLESIDE
 	            };
               streamSpheres[stream_id] = BABYLON.MeshBuilder.CreatePlane("plane", planeOpts, scene);
@@ -219,14 +223,16 @@
 
         document.querySelector('#start-sendrecv1').addEventListener('click', async () => {//入室
         // sendrecv1
-          const mediaStream = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: true}, video: true});
-          await sendrecv1.connect(mediaStream);
+        localStream = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: true}, video: true});
+          await sendrecv1.connect(localStream);
           messageOpen = true;
           lastAlpha = 1000;//camera.alpha;
           var value = sendrecv1.connectionId+',' + camera.alpha;
           sendrecv1.sendMessage('#example', new TextEncoder().encode(value));
-          
         });
+
+        
+
         document.querySelector('#stop-sendrecv1').addEventListener('click', async () => {//退室
           messageOpen = false;
           await sendrecv1.disconnect();
@@ -260,7 +266,7 @@
             console.log("Error occurred", ex);
           }
           await sendonly.connect(mediaStream);
-          document.getElementById("screen").srcObject = mediaStream;
+          //document.getElementById("screen").srcObject = mediaStream;
         });
 
         document.querySelector('#stop-sendonly').addEventListener('click', async () => {//画面共有の修了
@@ -326,6 +332,15 @@
 		  window.addEventListener('resize', function () {
 			  engine.resize();
 		  });
+
+      function mic_on_off_clicked() {
+        if (document.getElementsByName('mic_on_off')[0].checked) {
+          localStream.getAudioTracks()[0].enabled = true;
+        }
+        else {
+          localStream.getAudioTracks()[0].enabled = false;
+        }
+      }
 
     </script>
   </body>
