@@ -157,6 +157,7 @@
             var stream_id = stream_id_ + screenShare;
             const remoteVideoId = 'stream-video-' + stream_id;
             var vScale = 1;
+	    var matAlpha = 1.0;
             if(screenShare == ''){
               streamSpheres[stream_id] = BABYLON.MeshBuilder.CreateSphere(stream_id, { diameter: _sphereDiameter, diameterX: _sphereDiameterX }, scene);
               streamSpheres[stream_id].position.x = 0;
@@ -173,6 +174,7 @@
               streamSpheres[stream_id] = BABYLON.MeshBuilder.CreatePlane("plane", planeOpts, scene);
               streamSpheres[stream_id].position = new BABYLON.Vector3(0, cameraTarget.y, 10);
               vScale = -1;
+	      matAlpha = 0.5;
             }
             
             const remoteVideos = document.querySelector('#stream-videos');
@@ -188,6 +190,7 @@
               remoteVideo.srcObject = stream;
               remoteVideos.appendChild(remoteVideo);
               streamSpheres[stream_id].material = creatVideoMat(stream_id, document.getElementById(remoteVideoId), vScale);
+	      streamSpheres[stream_id].material.alpha = matAlpha;//透明度
             }
           }
 
