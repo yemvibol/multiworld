@@ -41,8 +41,8 @@
 
       const channelId = 'tsukubaRoom';
       const debug = false;
-      const sora = Sora.connection("wss://sora.ikeilabsora.0am.jp/signaling", debug);
-      //const sora = Sora.connection("wss://u1.xr360d.net/signaling", debug);
+      //const sora = Sora.connection("wss://sora.ikeilabsora.0am.jp/signaling", debug);
+      const sora = Sora.connection("wss://u1.xr360d.net/signaling", debug);
       const bundleId = Math.random().toString(36).substring(2);
       const options = {
         multistream: true,
@@ -81,19 +81,30 @@
       {
         //  *** CAMERA  ***
         var scene = new BABYLON.Scene(engine);
-        var cameraTarget = new BABYLON.Vector3(0, 100, 0);
-			  var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 0, Math.PI / 2, 5.0, cameraTarget, scene);
-			  camera.fov = 60 * (Math.PI / 180);
+        var cameraTarget = new BABYLON.Vector3(0.0, 100.0, 0.0);
+        var cam_alpha = -Math.PI/2;
+        var cam_beta = Math.PI / 2;
+        var cam_fov = 70 * (Math.PI / 180); 
+			  var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", cam_alpha, cam_beta, 5.0, cameraTarget, scene);
+			  camera.fov = cam_fov;
         camera.attachControl(canvas, true);
         camera.inputs.remove(camera.inputs.attached.mousewheel);
+        function resetCam(){
+          camera.alpha = cam_alpha;
+          camera.beta = cam_beta;
+          camera.fov = cam_fov;
+        }
 
         // *** VARIABLES ***
-        
         let numOfCliend = 0;
         var streamSpheres = {};
         var cameraData = {};
         var messageOpen = false;
         var lastAlpha = 1000;//camera.alpha;
+        var shareScreenID = '';
+        var screen_scalling = 1.0;
+        var screen_position = new BABYLON.Vector3(0.0, cameraTarget.y + 5.0, 10.0);
+        var screen_rotation = new BABYLON.Vector3(0.0, 0.0, 0.0);
         // SORA
         const sendrecv1 = sora.sendrecv(channelId, null, options);
         const sendonly = sora.sendonly(channelId, null, screenOptions);
@@ -102,6 +113,7 @@
         sendrecv1.on('track', (event) => {//
           const stream = event.streams[0];
           remoteVideoTracks[stream.id]=stream;
+          
         });
 
         sendrecv1.on('notify', (event) => {
@@ -113,6 +125,7 @@
           }
           else if(event.event_type=='connection.destroyed'){
             removeVideo(event);
+            lastAlpha = 1000;//camera.alpha;
           }
         });
 
@@ -122,16 +135,20 @@
             if(conn.connection_id == sendrecv1.connectionId){
               return;
             }
+            
             const stream = remoteVideoTracks[conn.connection_id];
             if(!stream){
               console.error('notify', 'stream not found', conn.connection_id);
               return;
             }
-            if(conn.metadata?.screen){
+            if(conn.metadata?.screen){//share screen
               addStreamVideo(conn.connection_id, stream, 'screen');
+              resetCam();
             } else {
               if(conn.client_id == 'THISISREMOTE') return;
               addStreamVideo(conn.connection_id, stream, '');
+              messageOpen = true;
+              lastAlpha = 1000;//camera.alpha; to send view angle to LOCAL
             }
           }
 
@@ -144,9 +161,10 @@
             stream.getTracks().forEach(track => track.stop());
             if(conn.metadata?.screen){
               removeStreamVideo(conn.connection_id + 'screen');
+              shareScreenID = '';
             } else {
               removeStreamVideo(conn.connection_id);
-              
+              messageOpen = false;
             }
             delete remoteVideoTracks[conn.connection_id];
           }
@@ -157,12 +175,13 @@
             var stream_id = stream_id_ + screenShare;
             const remoteVideoId = 'stream-video-' + stream_id;
             var vScale = 1;
-	    var matAlpha = 1.0;
+            var matAlpha = 1.0;
             if(screenShare == ''){
               streamSpheres[stream_id] = BABYLON.MeshBuilder.CreateSphere(stream_id, { diameter: _sphereDiameter, diameterX: _sphereDiameterX }, scene);
               streamSpheres[stream_id].position.x = 0;
               streamSpheres[stream_id].position.z = 0;//numOfCliend * 100.0;
               streamSpheres[stream_id].position.y = cameraTarget.y;
+              streamSpheres[stream_id].rotation.y = Math.PI / 2;
               numOfCliend += 1;
             }
             else{
@@ -172,9 +191,12 @@
 			          sideOrientation: BABYLON.Mesh.DOUBLESIDE
 	            };
               streamSpheres[stream_id] = BABYLON.MeshBuilder.CreatePlane("plane", planeOpts, scene);
-              streamSpheres[stream_id].position = new BABYLON.Vector3(0, cameraTarget.y, 10);
+              //streamSpheres[stream_id].position = new BABYLON.Vector3(0, cameraTarget.y, 10);
+              streamSpheres[stream_id].position = screen_position;
+              streamSpheres[stream_id].rotation = screen_rotation;
+              shareScreenID = stream_id;
               vScale = -1;
-	      matAlpha = 0.5;
+              matAlpha = 0.5;
             }
             
             const remoteVideos = document.querySelector('#stream-videos');
@@ -190,7 +212,8 @@
               remoteVideo.srcObject = stream;
               remoteVideos.appendChild(remoteVideo);
               streamSpheres[stream_id].material = creatVideoMat(stream_id, document.getElementById(remoteVideoId), vScale);
-	      streamSpheres[stream_id].material.alpha = matAlpha;//透明度
+              streamSpheres[stream_id].material.alpha = matAlpha;//透明度
+              
             }
           }
 
@@ -225,13 +248,10 @@
         }
 
         document.querySelector('#start-sendrecv1').addEventListener('click', async () => {//入室
-        // sendrecv1
-        localStream = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: true}, video: true});
+          // sendrecv1
+          localStream = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: true}, video: true});
           await sendrecv1.connect(localStream);
-          messageOpen = true;
-          lastAlpha = 1000;//camera.alpha;
-          var value = sendrecv1.connectionId+',' + camera.alpha;
-          sendrecv1.sendMessage('#example', new TextEncoder().encode(value));
+          
         });
 
         
@@ -269,32 +289,103 @@
             console.log("Error occurred", ex);
           }
           await sendonly.connect(mediaStream);
-          //document.getElementById("screen").srcObject = mediaStream;
+          //resetCam();
+          
         });
 
         document.querySelector('#stop-sendonly').addEventListener('click', async () => {//画面共有の修了
           await sendonly.disconnect();
         });
         
-        //sendrecv1.on('message', (event) => {
-        //  console.log('message: ' + new TextDecoder().decode(event.data));
-        //});
+        //**** MESSAGE ****
+        sendrecv1.on('message', (event) => {
+          console.log('message: ' + new TextDecoder().decode(event.data));
+          var getData = new TextDecoder().decode(event.data).split(',');
+          screen_position.x = getData[0];
+          screen_position.z = getData[1];
+          screen_rotation.y = getData[2];
+        });
         
+        //**** LOOP EVERY FRAME ****
         scene.onBeforeRenderObservable.add(() => { // Runs every frame
           if(messageOpen){
             if(lastAlpha != camera.alpha){
-              //console.log(camera.alpha);
-              var value = sendrecv1.connectionId+',' + camera.alpha;
-              sendrecv1.sendMessage('#example', new TextEncoder().encode(value));
-              lastAlpha = camera.alpha;
+              //console.log(sendrecv1.connectionId);
+              var angVal = camera.alpha + Math.PI/2;
+              var value = sendrecv1.connectionId+',' + angVal;
+              try{
+                sendrecv1.sendMessage('#example', new TextEncoder().encode(value));
+                lastAlpha = camera.alpha;
+              }catch(error){
+
+              }
+
             }
           }
-        });                
-
+        }); 
+        //**** ANIMATION ****
  				scene.registerBeforeRender(function () {//animation            
-        	;
+        	if(shareScreenID != ''){
+            //if(streamSpheres[shareScreenID].scaling != screen_scalling){
+            //  streamSpheres[shareScreenID].scaling = screen_scalling;
+            //}
+            if(streamSpheres[shareScreenID].position.x != screen_position.x || streamSpheres[shareScreenID].position.z != screen_position.z){
+              streamSpheres[shareScreenID].position = screen_position;
+            }
+            if(streamSpheres[shareScreenID].rotation.y != screen_rotation.y){
+              streamSpheres[shareScreenID].rotation.y = screen_rotation.y;
+            }
+          }
 				});
-				
+				//**** KEYBOARD ****
+        scene.onKeyboardObservable.add((kbInfo) => {
+		      switch (kbInfo.type) {
+			      case BABYLON.KeyboardEventTypes.KEYDOWN:
+              if(kbInfo.event.key == '+'){
+                //screen_postion.z += 0.2;
+              }
+              else if(kbInfo.event.key == '-'){
+                //screen_postion.z -= 0.2;
+              }
+              //console.log("KEY DOWN: ", kbInfo.event.key);
+				      break;
+			      case BABYLON.KeyboardEventTypes.KEYUP:
+				      if(kbInfo.event.key == 'r'){
+                resetCam();
+              }
+              //console.log("KEY UP: ", kbInfo.event.code);
+				      break;
+		      }
+	      })
+
+        //**** GUI ****
+        var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        var panel = new BABYLON.GUI.StackPanel();
+        panel.width = "220px";
+        panel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        panel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+        advancedTexture.addControl(panel);
+
+        var header = new BABYLON.GUI.TextBlock();
+        header.text = "ZOOM +";
+        header.height = "20px";
+        header.color = "white";
+        panel.addControl(header); 
+
+        var slider = new BABYLON.GUI.Slider();
+        slider.minimum = 0;
+        slider.maximum = cam_fov - 20 * (Math.PI / 180);
+        slider.value = 0;
+        slider.isVertical = true;
+        slider.height = "200px";
+        slider.width = "20px";
+        slider.color = "red";
+        slider.onValueChangedObservable.add(function(value) {
+          //header.text = "Y-rotation: " + (BABYLON.Tools.ToDegrees(value) | 0) + " deg";
+          camera.fov = cam_fov - slider.value;
+        });
+        panel.addControl(slider);    
+
 				///xxxxxxxxxx HMD xxxxxxxxxx
         // Create a default environment for the scene.
 				var environment = scene.createDefaultEnvironment();
