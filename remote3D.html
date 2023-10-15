@@ -106,6 +106,7 @@
         var screen_rotation = new BABYLON.Vector3(0.0, 0.0, 0.0);
         var screen_change = false;
         var screen_radio = 1.0;
+        var screen_height_radio = 1.0;
         // SORA
         const sendrecv1 = sora.sendrecv(channelId, null, options);
         const sendonly = sora.sendonly(channelId, null, screenOptions);
@@ -298,7 +299,7 @@
           await sendonly.disconnect();
         });
         
-        //**** MESSAGE ****
+        //****************************** MESSAGE ********************************
         sendrecv1.on('message', (event) => {
           console.log('message: ' + new TextDecoder().decode(event.data));
           var getData = new TextDecoder().decode(event.data).split(',');
@@ -309,10 +310,11 @@
             screen_position.z = getData[3];
             screen_rotation.y = getData[4];
             screen_radio = getData[5];
+            screen_height_radio = getData[6];
           }
         });
         
-        //**** LOOP EVERY FRAME ****
+        //****************************** LOOP EVERY FRAME *********************************
         scene.onBeforeRenderObservable.add(() => { // Runs every frame
           if(messageOpen){
             if(lastAlpha != camera.alpha){
@@ -329,14 +331,14 @@
             }
           }
         }); 
-        //**** ANIMATION ****
+        //*************************************** ANIMATION ******************************************
  				scene.registerBeforeRender(function () {//animation            
         	if(shareScreenID != ''){
             if(screen_change){
               streamSpheres[shareScreenID].position = screen_position;
               streamSpheres[shareScreenID].rotation.y = screen_rotation.y;
               streamSpheres[shareScreenID].scaling.x = screen_radio;
-              streamSpheres[shareScreenID].scaling.y = screen_radio;
+              streamSpheres[shareScreenID].scaling.y = (screen_radio * screen_height_radio);
               //console.log(streamSpheres[shareScreenID].position);
               screen_change = false;
             }
