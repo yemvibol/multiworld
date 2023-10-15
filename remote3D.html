@@ -102,9 +102,10 @@
         var messageOpen = false;
         var lastAlpha = 1000;//camera.alpha;
         var shareScreenID = '';
-        var screen_scalling = 1.0;
         var screen_position = new BABYLON.Vector3(0.0, cameraTarget.y + 5.0, 10.0);
         var screen_rotation = new BABYLON.Vector3(0.0, 0.0, 0.0);
+        var screen_change = false;
+        var screen_radio = 1.0;
         // SORA
         const sendrecv1 = sora.sendrecv(channelId, null, options);
         const sendonly = sora.sendonly(channelId, null, screenOptions);
@@ -176,7 +177,7 @@
             const remoteVideoId = 'stream-video-' + stream_id;
             var vScale = 1;
             var matAlpha = 1.0;
-            if(screenShare == ''){
+            if(screenShare == ''){//360 degree streaming
               streamSpheres[stream_id] = BABYLON.MeshBuilder.CreateSphere(stream_id, { diameter: _sphereDiameter, diameterX: _sphereDiameterX }, scene);
               streamSpheres[stream_id].position.x = 0;
               streamSpheres[stream_id].position.z = 0;//numOfCliend * 100.0;
@@ -184,8 +185,8 @@
               streamSpheres[stream_id].rotation.y = Math.PI / 2;
               numOfCliend += 1;
             }
-            else{
-              var planeOpts = {
+            else{//share screen
+              var planeOpts = {//4:3 radio
 			          height: 14.4, 
 			          width: 19.2, 
 			          sideOrientation: BABYLON.Mesh.DOUBLESIDE
@@ -207,7 +208,7 @@
               remoteVideo.autoplay = true;
               remoteVideo.playsinline = true;
               remoteVideo.controls = true;
-              remoteVideo.width = '640';
+              remoteVideo.width = '640';//4:3 radio streaming
               remoteVideo.height = '480';
               remoteVideo.srcObject = stream;
               remoteVideos.appendChild(remoteVideo);
@@ -301,9 +302,14 @@
         sendrecv1.on('message', (event) => {
           console.log('message: ' + new TextDecoder().decode(event.data));
           var getData = new TextDecoder().decode(event.data).split(',');
-          screen_position.x = getData[0];
-          screen_position.z = getData[1];
-          screen_rotation.y = getData[2];
+          if(getData[0] == 'screen'){
+            screen_change = true;
+            screen_position.x = getData[1];
+            screen_position.y = cameraTarget.y + parseFloat(getData[2]);
+            screen_position.z = getData[3];
+            screen_rotation.y = getData[4];
+            screen_radio = getData[5];
+          }
         });
         
         //**** LOOP EVERY FRAME ****
@@ -326,14 +332,13 @@
         //**** ANIMATION ****
  				scene.registerBeforeRender(function () {//animation            
         	if(shareScreenID != ''){
-            //if(streamSpheres[shareScreenID].scaling != screen_scalling){
-            //  streamSpheres[shareScreenID].scaling = screen_scalling;
-            //}
-            if(streamSpheres[shareScreenID].position.x != screen_position.x || streamSpheres[shareScreenID].position.z != screen_position.z){
+            if(screen_change){
               streamSpheres[shareScreenID].position = screen_position;
-            }
-            if(streamSpheres[shareScreenID].rotation.y != screen_rotation.y){
               streamSpheres[shareScreenID].rotation.y = screen_rotation.y;
+              streamSpheres[shareScreenID].scaling.x = screen_radio;
+              streamSpheres[shareScreenID].scaling.y = screen_radio;
+              //console.log(streamSpheres[shareScreenID].position);
+              screen_change = false;
             }
           }
 				});
