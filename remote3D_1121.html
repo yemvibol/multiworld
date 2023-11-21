@@ -146,9 +146,11 @@
         var messageOpen = false;
         var lastAlpha = 1000;//camera.alpha;
         var shareScreenID = '';
-        var screen_scalling = 1.0;
         var screen_position = new BABYLON.Vector3(0.0, cameraTarget.y + 5.0, 10.0);
         var screen_rotation = new BABYLON.Vector3(0.0, 0.0, 0.0);
+        var screen_change = false;
+        var screen_radio = 1.0;
+        var screen_height_radio = 1.0;
         // SORA
         const sendrecv1 = sora.sendrecv(channelId, null, options);
         const sendonly = sora.sendonly(channelId, null, screenOptions);
@@ -353,12 +355,15 @@
             screen_rotation.y = getData[4];
             screen_radio = getData[5];
             screen_height_radio = getData[6];
-            transText = getData[7];
+            
+          }
+          else if (getData[0] == 'subtitles'){
+            transText = getData[1];
           }
 
         });
         
-       //****************************** MESSAGE ********************************
+        //****************************** LOOP EVERY FRAME *********************************
         scene.onBeforeRenderObservable.add(() => { // Runs every frame
           if(messageOpen){
             if(lastAlpha != camera.alpha){
@@ -375,27 +380,12 @@
             }
 
             label.text = transText; //ローカルの翻訳字幕に反映
+
           }
           //sphere.getAbsolutePosition.z = 0;
           //console.log(sphere.getAbsolutePosition());
         }); 
-        //****************************** LOOP EVERY FRAME *********************************
- 		scene.registerBeforeRender(function () {//animation            
-        	if(messageOpen){
-            if(lastAlpha != camera.alpha){
-              //console.log(sendrecv1.connectionId);
-              var angVal = camera.alpha + Math.PI/2;
-              var value = sendrecv1.connectionId+',' + angVal;
-              try{
-                sendrecv1.sendMessage('#example', new TextEncoder().encode(value));
-                lastAlpha = camera.alpha;
-              }catch(error){
-
-              }
-
-            }
-          }
-		});
+        
         //*************************************** ANIMATION ******************************************
  		scene.registerBeforeRender(function () {//animation            
             if(shareScreenID != ''){
@@ -478,7 +468,7 @@
           });
 
 				}
-
+        
         //カメラの位置に合わせてテキスト位置移動
         if(xrHelper.baseExperience.state == BABYLON.WebXRState.NOT_IN_XR){  //XRに入っているかどうか
           sphere.position.y  = 100;   //親オブジェクトの位置を変更することでテキストの位置も変更可能
@@ -486,7 +476,7 @@
         else{
           sphere.position.y  = 0;
         }
-
+        console.log(sphere.position);
 
          //途中省略
         const tmpRay = new BABYLON.Ray();
