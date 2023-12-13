@@ -25,6 +25,8 @@ inputElement.addEventListener('change', (e) => {
 }, false);
 imgElement.onload = function() {
   let mat = cv.imread(imgElement);
+  cv.cvtColor(mat, mat, cv.COLOR_RGB2GRAY, 0);
+  cv.Canny(mat, mat, 50, 100, 3, false);
   cv.imshow('canvasOutput', mat);
   mat.delete();
 };
